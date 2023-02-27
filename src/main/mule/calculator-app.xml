@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="1aa9fcee-9378-46d8-b79d-bb37aa4bf95f" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="calculator-appFlow" doc:id="2d1ddf91-71be-40ef-b0fc-0dc3c1b78343" >
+		<http:listener doc:name="Listener" doc:id="541e208d-9cfe-419d-a642-4236a31f7435" config-ref="HTTP_Listener_config" path="calculate"/>
+		<set-variable value="#[attributes.queryParams.op]" doc:name="Set Variable" doc:id="87401626-409f-4cd1-9137-d3ffb341dbd8" variableName="operation"/>
+		<ee:transform doc:name="Transform Message" doc:id="7d3c9cc0-3707-4f2f-a043-900e79b28bc3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+var a = payload.num1
+var b = payload.num2
+var out = vars.operation  match {
+        case "add" -> ["addition", a+b] 
+        case "sub" -> ["subtraction", a-b]
+        case "mul" -> ["multiplication", a*b]
+        case "div" -> ["division", a/b]
+        else -> [vars.operation, "Invalid"]
+}
+output application/json
+---
+{
+	operationType: out[0],
+	result: out[1]
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

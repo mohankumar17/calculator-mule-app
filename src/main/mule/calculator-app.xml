@@ -10,7 +10,12 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	</http:listener-config>
 	<configuration-properties doc:name="Configuration properties" doc:id="7e77989f-c80d-4217-8b19-a0d7ac4bb581" file="default.yaml" />
 	<flow name="calculator-appFlow" doc:id="2d1ddf91-71be-40ef-b0fc-0dc3c1b78343" >
-		<http:listener doc:name="Listener" doc:id="541e208d-9cfe-419d-a642-4236a31f7435" config-ref="HTTP_Listener_config" path="calculate"/>
+		<http:listener doc:name="Listener" doc:id="541e208d-9cfe-419d-a642-4236a31f7435" config-ref="HTTP_Listener_config" path="calculate">
+			<http:response statusCode="#[vars.httpStatus]" />
+			<http:error-response statusCode="#[vars.httpStatus default 500]" >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
 		<set-variable value="#[attributes.queryParams.op]" doc:name="Set Variable" doc:id="87401626-409f-4cd1-9137-d3ffb341dbd8" variableName="operation"/>
 		<ee:transform doc:name="Transform Message" doc:id="7d3c9cc0-3707-4f2f-a043-900e79b28bc3" >
 			<ee:message >
@@ -18,11 +23,11 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 var a = payload.num1
 var b = payload.num2
 var out = vars.operation  match {
-        case "add" -> ["addition", a+b] 
-        case "sub" -> ["subtraction", a-b]
-        case "mul" -> ["multiplication", a*b]
-        case "div" -> ["division", a/b]
-        else -> [vars.operation, "Invalid"]
+        case "add" -> ["Addition", a+b] 
+        case "sub" -> ["Subtraction", a-b]
+        case "mul" -> ["Multiplication", a*b]
+        case "div" -> ["Division", a/b]
+        else -> [vars.operation, "NA"]
 }
 output application/json
 ---
@@ -31,6 +36,35 @@ output application/json
 	result: out[1]
 }]]></ee:set-payload>
 			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="httpStatus" ><![CDATA[200]]></ee:set-variable>
+			</ee:variables>
 		</ee:transform>
+		<choice doc:name="Choice" doc:id="808927f4-4ed3-411c-bd67-9820d9f29a2c" >
+			<when expression='#[payload.result=="NA"]'>
+				<raise-error doc:name="Raise error" doc:id="027b4c5f-0812-41aa-aabf-ea0d3320d6c4" type="INPUT:INVALID_OP" description="Invalid Operation Type Specified. It must be either of the following: add, sub, mul and div"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="bb3a4a20-217e-4f87-8359-ff0befeeccb5" message="Completed"/>
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="0dd213ba-39a4-4d5e-95c9-ae21a7500b05" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="2e878889-0355-4c18-8ace-80ea65a2f9b6" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errorDescription: error.description,
+	errorType: error.errorType
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="httpStatus" ><![CDATA[400]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
 	</flow>
 </mule>

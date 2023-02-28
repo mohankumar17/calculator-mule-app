@@ -4,7 +4,7 @@ pipeline {
     
     stage('Deploy Standalone') {
       steps {
-        sh 'mvn clean deploy -DmuleDeploy'
+        bat 'mvn clean deploy -DmuleDeploy'
       }
     }
    

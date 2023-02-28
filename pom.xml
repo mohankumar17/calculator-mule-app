@@ -33,7 +33,7 @@
 				<extensions>true</extensions>
 				<configuration>
 					<standaloneDeployment>
-						<muleHome>${mule.home.test}</muleHome>
+						<muleHome>C:/MuleStandalone/mule-enterprise-standalone-4.4.0-20221111</muleHome>
 						<muleVersion>${app.runtime}</muleVersion>
 					</standaloneDeployment>
 				</configuration>
